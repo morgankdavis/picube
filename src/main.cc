@@ -256,11 +256,11 @@ unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor) {
 		
 		{ vec3(-HDIM, HDIM, HDIM),		vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, y, z
 		{ vec3(-HDIM, HDIM, -HDIM),		vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, y, -z
-		{ vec3(-HDIM, -HDIM, -HDIM),		vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, -y, -z
+		{ vec3(-HDIM, -HDIM, -HDIM),	vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, -y, -z
 		
 		// LEFT, 2
 		
-		{ vec3(-HDIM, -HDIM, -HDIM),		vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, -y, -z
+		{ vec3(-HDIM, -HDIM, -HDIM),	vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, -y, -z
 		{ vec3(-HDIM, -HDIM, HDIM),		vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, -y, z
 		{ vec3(-HDIM, HDIM, HDIM),		vec3(-1.0f, 0.0f, 0.0f),	GREEN_COLOR },		// -x, y, z
 		
@@ -336,6 +336,17 @@ unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor) {
 	return 3 * numTriangles;
 }
 
+unsigned char* CreateSnapshot() {
+	
+	unsigned framebufferWidth = WINDOW_WIDTH;
+	unsigned framebufferHeight = WINDOW_HEIGHT;
+	unsigned char* pixelBuf = (unsigned char*)malloc(framebufferWidth * framebufferHeight * 4);
+	
+	glReadPixels(0, 0, framebufferWidth, framebufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuf);
+	
+	return pixelBuf;
+}
+
 int main(int argc, const char* argv[]) {
 	
 	GLFWwindow* window = InitializeGLFW();
@@ -403,6 +414,8 @@ int main(int argc, const char* argv[]) {
 				glDrawArrays(GL_TRIANGLES, 0, numVerts);
 
 				glfwSwapBuffers(window);
+				
+				unsigned char* snapshot = CreateSnapshot();
 
 				glfwPollEvents();
 				
@@ -419,4 +432,3 @@ int main(int argc, const char* argv[]) {
 		glfwTerminate();
 	}
 }
-
