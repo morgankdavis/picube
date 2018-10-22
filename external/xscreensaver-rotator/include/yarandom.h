@@ -12,6 +12,10 @@
 #ifndef __YARANDOM_H__
 #define __YARANDOM_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -45,10 +49,11 @@ extern void ya_rand_init (unsigned int);
  */
 #define rand          __ERROR_use_random_not_rand_in_xscreensaver__
 #define drand48       __ERROR_use_frand_not_drand48_in_xscreensaver__
-//#define srandom       __ERROR_do_not_call_srandom_in_xscreensaver__
+#define srandom       __ERROR_do_not_call_srandom_in_xscreensaver__
 #define srand         __ERROR_do_not_call_srand_in_xscreensaver__
 #define srand48       __ERROR_do_not_call_srand48_in_xscreensaver__
-#define ya_rand_init  __ERROR_do_not_call_ya_rand_init_in_xscreensaver__
+	// Morgan: normally this is done internally by xscreensaver
+//#define ya_rand_init  __ERROR_do_not_call_ya_rand_init_in_xscreensaver__
 
 
 #if defined (__GNUC__) && (__GNUC__ >= 2)
@@ -99,5 +104,9 @@ static double _frand_tmp_;
 
 #define MAXRAND         (2147483648.0) /* unsigned 1<<31 as a float */
 #define SRAND(n)        /* already seeded by screenhack.c */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __YARANDOM_H__ */

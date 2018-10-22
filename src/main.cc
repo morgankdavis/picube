@@ -17,6 +17,10 @@
 #include "yarandom.h"
 
 
+
+#include <unistd.h>
+
+
 //#define EXIT_ON_GL_ERROR
 
 
@@ -29,6 +33,7 @@ constexpr unsigned	FB_SCALE = 			18.0;
 constexpr unsigned  FB_WIDTH =      	64 * FB_SCALE;
 constexpr unsigned  FB_HEIGHT =     	32 * FB_SCALE;
 constexpr unsigned  MSAA_SAMPLES =      4;
+constexpr float		TARGET_FPS =		60.0;
 constexpr float     FOV =               30.0;
 constexpr float		CAM_DISTANCE =		4.0;
 
@@ -37,7 +42,7 @@ constexpr float		CAM_DISTANCE =		4.0;
 constexpr float 	SPIN_SPEED = 		0.15;
 constexpr float 	WANDER_SPEED = 		0.0035;
 constexpr float 	SPIN_ACCEL = 		0.2;
-constexpr float		WANDER_X =			2.0;
+constexpr float		WANDER_X =			3.0;
 constexpr float		WANDER_Y =			1.0;
 constexpr float		WANDER_Z =			1.0;
 
@@ -362,11 +367,8 @@ int main(int argc, const char* argv[]) {
 	
 	if (window) {
 		if (InitializeGLEW()) {
-			srandom(time(NULL));
+			ya_rand_init(0); // normally this is done internally by xscreensaver
 			
-			//# undef ya_rand_init
-			//ya_rand_init(time(NULL));
-			//ya_rand_init(0);
 			rotator* rotator = make_rotator(SPIN_SPEED,
 											SPIN_SPEED,
 											SPIN_SPEED,
@@ -412,7 +414,24 @@ int main(int argc, const char* argv[]) {
 			glDepthFunc(GL_LESS);
 			glDepthMask(GL_TRUE);
 			
+			
+			
+
+			
+			
+			
 			while (!glfwWindowShouldClose(window)) {
+				
+				
+				
+				float time = glfwGetTime();
+				static float lastFrameTime = time;
+				float deltaSeconds = time - lastFrameTime;
+				//previousSeconds = time;
+				
+				if (deltaSeconds > 1.0/TARGET_FPS) {
+				
+					lastFrameTime = time;
 				
 //				float a = 500.0;
 //				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
@@ -433,9 +452,9 @@ int main(int argc, const char* argv[]) {
 					mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
 					
 					get_rotation(rotator, &x, &y, &z, 1);
-					mat4 rotateX = glm::rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
-					mat4 rotateY = glm::rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
-					mat4 rotateZ = glm::rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
+					mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
+					mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
+					mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
 					
 					model = translate * rotateZ * rotateY * rotateX;
 				
@@ -455,6 +474,14 @@ int main(int argc, const char* argv[]) {
 				}
 				
 				CheckError(__LINE__);
+					
+					
+				}
+				else {
+					usleep(1);
+				}
+					
+					
 			}
 			
 			// TODO: dispose of things
