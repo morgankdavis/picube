@@ -12,6 +12,10 @@
 #ifndef __ROTATOR_H__
 #define __ROTATOR_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct rotator rotator;
 
 /* Returns a rotator object, which encapsulates rotation and motion state.
@@ -56,5 +60,9 @@ extern void get_position (rotator *rot,
 
 /* Destroys and frees a `rotator' object. */
 extern void free_rotator (rotator *r);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __ROTATOR_H__ */

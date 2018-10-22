@@ -45,7 +45,7 @@ extern void ya_rand_init (unsigned int);
  */
 #define rand          __ERROR_use_random_not_rand_in_xscreensaver__
 #define drand48       __ERROR_use_frand_not_drand48_in_xscreensaver__
-#define srandom       __ERROR_do_not_call_srandom_in_xscreensaver__
+//#define srandom       __ERROR_do_not_call_srandom_in_xscreensaver__
 #define srand         __ERROR_do_not_call_srand_in_xscreensaver__
 #define srand48       __ERROR_do_not_call_srand48_in_xscreensaver__
 #define ya_rand_init  __ERROR_do_not_call_ya_rand_init_in_xscreensaver__

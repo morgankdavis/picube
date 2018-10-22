@@ -13,11 +13,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "rotator.h"
+#include "yarandom.h"
+
 
 //#define EXIT_ON_GL_ERROR
-// change relative shader file path for Xcode debug build executable location
-#define XCODE
-
 
 
 using namespace glm;
@@ -33,13 +33,13 @@ constexpr float     FOV =               30.0;
 constexpr float		CAM_DISTANCE =		4.0;
 
 // configure the random movement of the object
-constexpr float		ROT_SPEED =			1.0;
-constexpr float		X_DRIFT =			1.5;
-constexpr float		Y_DRIFT =			0.5;
-constexpr float		Z_DRIFT =			1.5;
-constexpr float		X_DRIFT_SPEED =		1.0/8.0;
-constexpr float		Y_DRIFT_SPEED =		1.0/4.0;
-constexpr float		Z_DRIFT_SPEED =		1.0/4.0;
+
+constexpr float 	SPIN_SPEED = 		0.15;
+constexpr float 	WANDER_SPEED = 		0.0035;
+constexpr float 	SPIN_ACCEL = 		0.2;
+constexpr float		WANDER_X =			2.0;
+constexpr float		WANDER_Y =			1.0;
+constexpr float		WANDER_Z =			1.0;
 
 
 typedef struct {
@@ -104,7 +104,7 @@ GLFWwindow* InitializeGLFW() {
 	}
 	
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0);
+	glfwSwapInterval(1);
 	
 	return window;
 }
@@ -224,7 +224,7 @@ GLuint CreateProgram(string baseName) {
 	return prog;
 }
 
-unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor) {
+unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor, GLuint* vbo) {
 	
 	constexpr float DIM = 1.0;
 	constexpr float HDIM = DIM/2.0;
@@ -312,9 +312,9 @@ unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor) {
 	
 	unsigned numTriangles = 12;
 	
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	//GLuint vbo;
+	glGenBuffers(1, vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, *vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3 * numTriangles, verts, GL_STATIC_DRAW);
 	
 	glEnableVertexAttribArray(vPos);
@@ -362,7 +362,17 @@ int main(int argc, const char* argv[]) {
 	
 	if (window) {
 		if (InitializeGLEW()) {
-			srand(time(NULL));
+			srandom(time(NULL));
+			
+			//# undef ya_rand_init
+			//ya_rand_init(time(NULL));
+			//ya_rand_init(0);
+			rotator* rotator = make_rotator(SPIN_SPEED,
+											SPIN_SPEED,
+											SPIN_SPEED,
+											SPIN_ACCEL,
+											WANDER_SPEED,
+											true);
 			
 			GLuint program = CreateProgram("cube");
 			glUseProgram(program);
@@ -371,7 +381,8 @@ int main(int argc, const char* argv[]) {
 			GLint vNorm = glGetAttribLocation(program, "vNorm");
 			GLint vColor = glGetAttribLocation(program, "vColor");
 
-			unsigned numVerts = CreatCube(vPos, vNorm, vColor);
+			GLuint vbo;
+			unsigned numVerts = CreatCube(vPos, vNorm, vColor, &vbo);
 			
 			// MODEL
 			mat4 model = mat4(1.0f);
@@ -403,27 +414,33 @@ int main(int argc, const char* argv[]) {
 			
 			while (!glfwWindowShouldClose(window)) {
 				
-				float a = 500.0;
-				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
-				float time = glfwGetTime() + timeOffset;
-				static float previousSeconds = time;
-				float deltaSeconds = time - previousSeconds;
-				previousSeconds = time;
+//				float a = 500.0;
+//				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
+//				float time = glfwGetTime() + timeOffset;
+//				static float previousSeconds = time;
+//				float deltaSeconds = time - previousSeconds;
+//				previousSeconds = time;
 				
 				glViewport(0, 0, FB_WIDTH, FB_HEIGHT);
 				glClearColor(0.0, 0.0, 0.0, 1.0);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				
+				{
+					double x, y, z;
+					
+					get_position(rotator, &x, &y, &z, 1);
+					x -= 0.5; y -= 0.5; z -= 0.5;
+					mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
+					
+					get_rotation(rotator, &x, &y, &z, 1);
+					mat4 rotateX = glm::rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
+					mat4 rotateY = glm::rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
+					mat4 rotateZ = glm::rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
+					
+					model = translate * rotateZ * rotateY * rotateX;
 				
-				static float angle = 0.0;
-				angle += ROT_SPEED * deltaSeconds;
-				mat4 rotate = glm::rotate(mat4(1.0), radians(angle), {sin(time) + cos(-time), cos(time) - sin(-time), -sin(time) + cos(-time)});
-				mat4 translate = glm::translate(mat4(1.0), {cos(time*X_DRIFT_SPEED) * X_DRIFT,sin(time*Y_DRIFT_SPEED) * Y_DRIFT, -cos(time*Z_DRIFT_SPEED) * Z_DRIFT});
-				
-				model = translate * rotate;
-				
-				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
-				
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
+				}
 
 				glDrawArrays(GL_TRIANGLES, 0, numVerts);
 
@@ -443,6 +460,8 @@ int main(int argc, const char* argv[]) {
 			// TODO: dispose of things
 			
 			glfwDestroyWindow(window);
+			free_rotator(rotator);
+			glDeleteBuffers(1, &vbo);
 		}
 		
 		glfwTerminate();

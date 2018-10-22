@@ -67,7 +67,12 @@ include_directories(${GLM_INCLUDE_DIRS})
 
 # gif-h
 
-#include_directories(external/gif-h)
+include_directories(external/gif-h)
+
+# xscreensaver-rotator
+
+add_subdirectory(external/xscreensaver-rotator)
+include_directories(external/xscreensaver-rotator/include)
 
 #led-matrix
 
@@ -79,4 +84,8 @@ endif()
 
 
 
-target_link_libraries(${PROJECT_NAME} ${GLFW_LIBRARIES} ${GLEW_LIBRARIES} ${GLM_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+	${GLFW_LIBRARIES}
+	${GLEW_LIBRARIES}
+	${GLM_LIBRARIES}
+	xscreensaver-rotator)
