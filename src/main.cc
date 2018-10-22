@@ -196,7 +196,7 @@ bool CheckProgramLink(GLuint programID) {
 	return true;
 }
 
-GLuint CreateProgram(string baseName) {
+bool CreateProgram(string baseName, GLuint* programID) {
 	
 	string prefix = "";
 #ifdef XCODE
@@ -224,9 +224,13 @@ GLuint CreateProgram(string baseName) {
 	glAttachShader(prog, vs);
 	
 	glLinkProgram(prog);
-	CheckProgramLink(prog);
+	if (!CheckProgramLink(prog)) {
+		return false;
+	}
 	
-	return prog;
+	*programID = prog;
+	
+	return true;
 }
 
 unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor, GLuint* vbo) {
@@ -367,128 +371,124 @@ int main(int argc, const char* argv[]) {
 	
 	if (window) {
 		if (InitializeGLEW()) {
-			ya_rand_init(0); // normally this is done internally by xscreensaver
 			
-			rotator* rotator = make_rotator(SPIN_SPEED,
-											SPIN_SPEED,
-											SPIN_SPEED,
-											SPIN_ACCEL,
-											WANDER_SPEED,
-											true);
-			
-			GLuint program = CreateProgram("cube");
-			glUseProgram(program);
+			GLuint program;
+			if (CreateProgram("cube", &program)) {
+				glUseProgram(program);
+				
+				GLint vPos = glGetAttribLocation(program, "vPos");
+				GLint vNorm = glGetAttribLocation(program, "vNorm");
+				GLint vColor = glGetAttribLocation(program, "vColor");
+				
+				GLuint vbo;
+				unsigned numVerts = CreatCube(vPos, vNorm, vColor, &vbo);
+				
+				// MODEL
+				mat4 model = mat4(1.0f);
+				
+				// VIEW
+				vec3 view_eye = { 0, 0, CAM_DISTANCE };
+				vec3 view_center = { 0, 0, 0 };
+				vec3 view_up = { 0, 1, 0 };
+				mat4 view = lookAt(view_eye, // eye - location
+								   view_center, // center - look at
+								   view_up); // up
+				
+				// PROJECTION
+				mat4 projection = perspectiveFov((float)radians(FOV),
+												 (float)FB_WIDTH, (float)FB_HEIGHT,
+												 1.0f, 100.0f);
+				
+				GLint modelLoc = glGetUniformLocation(program, "model");
+				GLint viewLoc = glGetUniformLocation(program, "view");
+				GLint projectionLoc = glGetUniformLocation(program, "projection");
+				
+				glUniformMatrix4fv(viewLoc, 1, GL_FALSE, value_ptr(view));
+				glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, value_ptr(projection));
+				
+				
+				
+				ya_rand_init(0); // normally this is done internally by xscreensaver
+				rotator* rotator = make_rotator(SPIN_SPEED,
+												SPIN_SPEED,
+												SPIN_SPEED,
+												SPIN_ACCEL,
+												WANDER_SPEED,
+												true);
 
-			GLint vPos = glGetAttribLocation(program, "vPos");
-			GLint vNorm = glGetAttribLocation(program, "vNorm");
-			GLint vColor = glGetAttribLocation(program, "vColor");
+				
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				glEnable(GL_DEPTH_TEST);
+				glDepthFunc(GL_LESS);
+				glDepthMask(GL_TRUE);
+				
 
-			GLuint vbo;
-			unsigned numVerts = CreatCube(vPos, vNorm, vColor, &vbo);
-			
-			// MODEL
-			mat4 model = mat4(1.0f);
-			
-			// VIEW
-			vec3 view_eye = { 0, 0, CAM_DISTANCE };
-			vec3 view_center = { 0, 0, 0 };
-			vec3 view_up = { 0, 1, 0 };
-			mat4 view = lookAt(view_eye, // eye - location
-							   view_center, // center - look at
-							   view_up); // up
-			
-			// PROJECTION
-			mat4 projection = perspectiveFov((float)radians(FOV),
-											 (float)FB_WIDTH, (float)FB_HEIGHT,
-											 1.0f, 100.0f);
-
-			GLint modelLoc = glGetUniformLocation(program, "model");
-			GLint viewLoc = glGetUniformLocation(program, "view");
-			GLint projectionLoc = glGetUniformLocation(program, "projection");
-
-			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, value_ptr(view));
-			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, value_ptr(projection));
-
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(GL_LESS);
-			glDepthMask(GL_TRUE);
-			
-			
-			
-
-			
-			
-			
-			while (!glfwWindowShouldClose(window)) {
-				
-				
-				
-				float time = glfwGetTime();
-				static float lastFrameTime = time;
-				float deltaSeconds = time - lastFrameTime;
-				//previousSeconds = time;
-				
-				if (deltaSeconds > 1.0/TARGET_FPS) {
-				
-					lastFrameTime = time;
-				
-//				float a = 500.0;
-//				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
-//				float time = glfwGetTime() + timeOffset;
-//				static float previousSeconds = time;
-//				float deltaSeconds = time - previousSeconds;
-//				previousSeconds = time;
-				
-				glViewport(0, 0, FB_WIDTH, FB_HEIGHT);
-				glClearColor(0.0, 0.0, 0.0, 1.0);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				
-				{
-					double x, y, z;
+				while (!glfwWindowShouldClose(window)) {
 					
-					get_position(rotator, &x, &y, &z, 1);
-					x -= 0.5; y -= 0.5; z -= 0.5;
-					mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
 					
-					get_rotation(rotator, &x, &y, &z, 1);
-					mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
-					mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
-					mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
 					
-					model = translate * rotateZ * rotateY * rotateX;
-				
-					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
+					float time = glfwGetTime();
+					static float lastFrameTime = time;
+					float deltaSeconds = time - lastFrameTime;
+					//previousSeconds = time;
+					
+					if (deltaSeconds > 1.0/TARGET_FPS) {
+						
+						lastFrameTime = time;
+						
+						//				float a = 500.0;
+						//				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
+						//				float time = glfwGetTime() + timeOffset;
+						//				static float previousSeconds = time;
+						//				float deltaSeconds = time - previousSeconds;
+						//				previousSeconds = time;
+						
+						glViewport(0, 0, FB_WIDTH, FB_HEIGHT);
+						glClearColor(0.0, 0.0, 0.0, 1.0);
+						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+						
+						{
+							double x, y, z;
+							
+							get_position(rotator, &x, &y, &z, 1);
+							x -= 0.5; y -= 0.5; z -= 0.5;
+							mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
+							
+							get_rotation(rotator, &x, &y, &z, 1);
+							mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
+							mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
+							mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
+							
+							model = translate * rotateZ * rotateY * rotateX;
+							
+							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
+						}
+						
+						glDrawArrays(GL_TRIANGLES, 0, numVerts);
+						
+						glfwSwapBuffers(window);
+						
+						//unsigned char* snapshot = CreateSnapshot();
+						
+						glfwPollEvents();
+						
+						if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+							glfwSetWindowShouldClose(window, GLFW_TRUE);
+						}
+						
+						CheckError(__LINE__);
+					}
+					else {
+						usleep(1);
+					}
 				}
-
-				glDrawArrays(GL_TRIANGLES, 0, numVerts);
-
-				glfwSwapBuffers(window);
 				
-				//unsigned char* snapshot = CreateSnapshot();
-
-				glfwPollEvents();
-				
-				if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-					glfwSetWindowShouldClose(window, GLFW_TRUE);
-				}
-				
-				CheckError(__LINE__);
-					
-					
-				}
-				else {
-					usleep(1);
-				}
-					
-					
+				free_rotator(rotator);
+				glDeleteProgram(program);
+				glDeleteBuffers(1, &vbo);
 			}
 			
-			// TODO: dispose of things
-			
 			glfwDestroyWindow(window);
-			free_rotator(rotator);
-			glDeleteBuffers(1, &vbo);
 		}
 		
 		glfwTerminate();
