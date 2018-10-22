@@ -27,6 +27,7 @@ if (UNIX AND NOT APPLE AND NOT ANDROID AND NOT MINGW)
     message("We're LINUX")
     set(LINUX TRUE)
     add_definitions("-DLINUX")
+    add_definitions("-DGETTIMEOFDAY_TWO_ARGS") # for Xscreensaver's 'yarandom'
 endif()
 
 
