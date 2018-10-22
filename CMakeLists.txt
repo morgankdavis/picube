@@ -15,14 +15,18 @@ message("*** BUILD TYPE: " ${CMAKE_BUILD_TYPE} " ***")
 if (UNIX AND APPLE)
     message("We're MACOS")
     set(MACOS TRUE)
+    add_definitions("-DMACOS")
+    add_definitions("-DGETTIMEOFDAY_TWO_ARGS") # for Xscreensaver's 'yarandom'
     if (CMAKE_GENERATOR STREQUAL "Xcode")
         set(XCODE TRUE)
+        add_definitions("-DXCODE")
     endif()
 endif()
 
 if (UNIX AND NOT APPLE AND NOT ANDROID AND NOT MINGW)
     message("We're LINUX")
     set(LINUX TRUE)
+    add_definitions("-DLINUX")
 endif()
 
 
@@ -63,7 +67,7 @@ include_directories(${GLM_INCLUDE_DIRS})
 
 # gif-h
 
-include_directories(external/gif-h)
+#include_directories(external/gif-h)
 
 #led-matrix
 

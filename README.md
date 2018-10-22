@@ -5,4 +5,6 @@ Uses https://github.com/hzeller/rpi-rgb-led-matrix
 
 CMake build supports macOS and RPi.  Make sure to install the dependencies.  Use homebrew on macOS and apt on Raspbian:
 
+`brew install glm glfw3 glew`
+
 `sudo apt install -y build-essential xorg-dev libglm-dev libglfw3-dev libglew-dev`
