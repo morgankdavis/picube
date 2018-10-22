@@ -16,7 +16,7 @@
 
 //#define EXIT_ON_GL_ERROR
 // change relative shader file path for Xcode debug build executable location
-//#define XCODE
+#define XCODE
 
 
 
@@ -25,12 +25,21 @@ using namespace std;
 
 
 
-constexpr unsigned	SCALE = 18.0;
-constexpr unsigned  WINDOW_WIDTH =      64 * SCALE;
-constexpr unsigned  WINDOW_HEIGHT =     32 * SCALE;
-constexpr float     FOV =               45.0;
+constexpr unsigned	FB_SCALE = 			18.0;
+constexpr unsigned  FB_WIDTH =      	64 * FB_SCALE;
+constexpr unsigned  FB_HEIGHT =     	32 * FB_SCALE;
 constexpr unsigned  MSAA_SAMPLES =      4;
+constexpr float     FOV =               30.0;
+constexpr float		CAM_DISTANCE =		4.0;
 
+// configure the random movement of the object
+constexpr float		ROT_SPEED =			1.0;
+constexpr float		X_DRIFT =			1.5;
+constexpr float		Y_DRIFT =			0.5;
+constexpr float		Z_DRIFT =			1.5;
+constexpr float		X_DRIFT_SPEED =		1.0/8.0;
+constexpr float		Y_DRIFT_SPEED =		1.0/4.0;
+constexpr float		Z_DRIFT_SPEED =		1.0/4.0;
 
 
 typedef struct {
@@ -85,10 +94,10 @@ GLFWwindow* InitializeGLFW() {
 	// create the GLFW window
 	
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_SAMPLES, MSAA_SAMPLES);
 	
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "picube", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(FB_WIDTH, FB_HEIGHT, "picube", NULL, NULL);
 	if (!window) {
 		cout << "Error creating GLFW window." << endl;
 		return nullptr;
@@ -250,7 +259,7 @@ unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor) {
 		
 		{ vec3(HDIM, -HDIM, HDIM),		vec3(0.0f, -1.0f, 0.0f),	PURPLE_COLOR },		// x, -y, z
 		{ vec3(-HDIM, -HDIM, HDIM),		vec3(0.0f, -1.0f, 0.0f),	PURPLE_COLOR },		// -x, -y, z
-		{ vec3(HDIM, -HDIM, HDIM),		vec3(0.0f, -1.0f, 0.0f),	PURPLE_COLOR },		// -x, -y, -z
+		{ vec3(-HDIM, -HDIM, -HDIM),	vec3(0.0f, -1.0f, 0.0f),	PURPLE_COLOR },		// -x, -y, -z
 		
 		// LEFT, 1
 		
@@ -338,8 +347,8 @@ unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor) {
 
 unsigned char* CreateSnapshot() {
 	
-	unsigned framebufferWidth = WINDOW_WIDTH;
-	unsigned framebufferHeight = WINDOW_HEIGHT;
+	unsigned framebufferWidth = FB_WIDTH;
+	unsigned framebufferHeight = FB_HEIGHT;
 	unsigned char* pixelBuf = (unsigned char*)malloc(framebufferWidth * framebufferHeight * 4);
 	
 	glReadPixels(0, 0, framebufferWidth, framebufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixelBuf);
@@ -368,7 +377,7 @@ int main(int argc, const char* argv[]) {
 			mat4 model = mat4(1.0f);
 			
 			// VIEW
-			vec3 view_eye = { 0, 0, 3 };
+			vec3 view_eye = { 0, 0, CAM_DISTANCE };
 			vec3 view_center = { 0, 0, 0 };
 			vec3 view_up = { 0, 1, 0 };
 			mat4 view = lookAt(view_eye, // eye - location
@@ -377,7 +386,7 @@ int main(int argc, const char* argv[]) {
 			
 			// PROJECTION
 			mat4 projection = perspectiveFov((float)radians(FOV),
-											 (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT,
+											 (float)FB_WIDTH, (float)FB_HEIGHT,
 											 1.0f, 100.0f);
 
 			GLint modelLoc = glGetUniformLocation(program, "model");
@@ -394,20 +403,25 @@ int main(int argc, const char* argv[]) {
 			
 			while (!glfwWindowShouldClose(window)) {
 				
-				float time = glfwGetTime();
+				float a = 500.0;
+				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
+				float time = glfwGetTime() + timeOffset;
 				static float previousSeconds = time;
 				float deltaSeconds = time - previousSeconds;
 				previousSeconds = time;
 				
-				glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+				glViewport(0, 0, FB_WIDTH, FB_HEIGHT);
 				glClearColor(0.0, 0.0, 0.0, 1.0);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				
 				
 				static float angle = 0.0;
-				constexpr float degSec = 30.0;
-				angle += degSec * deltaSeconds;
-				model = rotate(mat4(1.0), radians(angle), {1, 2, 3});
+				angle += ROT_SPEED * deltaSeconds;
+				mat4 rotate = glm::rotate(mat4(1.0), radians(angle), {sin(time) + cos(-time), cos(time) - sin(-time), -sin(time) + cos(-time)});
+				mat4 translate = glm::translate(mat4(1.0), {cos(time*X_DRIFT_SPEED) * X_DRIFT,sin(time*Y_DRIFT_SPEED) * Y_DRIFT, -cos(time*Z_DRIFT_SPEED) * Z_DRIFT});
+				
+				model = translate * rotate;
+				
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
 				
 
@@ -415,7 +429,7 @@ int main(int argc, const char* argv[]) {
 
 				glfwSwapBuffers(window);
 				
-				unsigned char* snapshot = CreateSnapshot();
+				//unsigned char* snapshot = CreateSnapshot();
 
 				glfwPollEvents();
 				
@@ -425,6 +439,8 @@ int main(int argc, const char* argv[]) {
 				
 				CheckError(__LINE__);
 			}
+			
+			// TODO: dispose of things
 			
 			glfwDestroyWindow(window);
 		}
