@@ -434,6 +434,11 @@ int main(int argc, const char* argv[]) {
 				glDepthFunc(GL_LESS);
 				glDepthMask(GL_TRUE);
 				
+				
+				
+				
+				
+				glfwSetKeyCallback(window, key_callback);
 
 				while (!glfwWindowShouldClose(window)) {
 					
