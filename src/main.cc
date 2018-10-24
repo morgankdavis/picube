@@ -60,7 +60,7 @@ typedef struct {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	
-	cout << "KEY CALLBACK key: " << key << ", scancode: " << scancode << ", action: " << action << ", mods: " << mode << endl;
+	cout << "KEY CALLBACK key: " << key << ", scancode: " << scancode << ", action: " << action << ", mods: " << mods << endl;
 }
 
 
