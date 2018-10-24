@@ -55,12 +55,44 @@ typedef struct {
 
 
 
+enum class MODE : unsigned {
+	
+	BLANK,
+	EMISSIVE_CUBE,
+	END
+};
 
+
+MODE g_mode = MODE::EMISSIVE_CUBE;
 
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	
 	cout << "KEY CALLBACK key: " << key << ", scancode: " << scancode << ", action: " << action << ", mods: " << mods << endl;
+	
+	static int lastKeyDown = 0;
+	
+	if (action == GLFW_PRESS) {
+		
+		if (key != lastKeyDown) {
+			
+			if (key == GLFW_KEY_ENTER || key == GLFW_KEY_UNKNOWN) {
+				
+				underlying_type<MODE>::type modeRaw = static_cast<underlying_type<MODE>::type>(g_mode);
+				modeRaw += 1;
+				if (modeRaw >= static_cast<underlying_type<MODE>::type>(MODE::END)) {
+					modeRaw = 0;
+				}
+				
+				g_mode = MODE(modeRaw);
+			}
+			
+			lastKeyDown = key;
+		}
+	}
+	else {
+		lastKeyDown = 0;
+	}
 }
 
 
@@ -464,24 +496,26 @@ int main(int argc, const char* argv[]) {
 						glClearColor(0.0, 0.0, 0.0, 1.0);
 						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 						
-						{
-							double x, y, z;
+						if (g_mode == MODE::EMISSIVE_CUBE) {
+							{
+								double x, y, z;
+								
+								get_position(rotator, &x, &y, &z, 1);
+								x -= 0.5; y -= 0.5; z -= 0.5;
+								mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
+								
+								get_rotation(rotator, &x, &y, &z, 1);
+								mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
+								mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
+								mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
+								
+								model = translate * rotateZ * rotateY * rotateX;
+								
+								glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
+							}
 							
-							get_position(rotator, &x, &y, &z, 1);
-							x -= 0.5; y -= 0.5; z -= 0.5;
-							mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
-							
-							get_rotation(rotator, &x, &y, &z, 1);
-							mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
-							mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
-							mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
-							
-							model = translate * rotateZ * rotateY * rotateX;
-							
-							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
+							glDrawArrays(GL_TRIANGLES, 0, numVerts);
 						}
-						
-						glDrawArrays(GL_TRIANGLES, 0, numVerts);
 						
 						glfwSwapBuffers(window);
 						
@@ -492,10 +526,6 @@ int main(int argc, const char* argv[]) {
 						if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 							glfwSetWindowShouldClose(window, GLFW_TRUE);
 						}
-						else if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
-							cout << "Enter pressed!" << endl;
-						}
-						
 						
 						//cout << "Waiting for key events..." << endl;
 						//glfwWaitEvents();
