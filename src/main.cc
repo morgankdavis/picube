@@ -55,6 +55,18 @@ typedef struct {
 
 
 
+
+
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	
+	cout << "KEY CALLBACK key: " << key << ", scancode: " << scancode << ", action: " << action << ", mods: " << mode << endl;
+}
+
+
+
+
+
 float D2R(float d) {
 	return d * (M_PI/180.0);
 }
@@ -478,6 +490,10 @@ int main(int argc, const char* argv[]) {
 						else if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
 							cout << "Enter pressed!" << endl;
 						}
+						
+						
+						//cout << "Waiting for key events..." << endl;
+						//glfwWaitEvents();
 						
 						CheckError(__LINE__);
 					}
