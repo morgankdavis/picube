@@ -475,6 +475,9 @@ int main(int argc, const char* argv[]) {
 						if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 							glfwSetWindowShouldClose(window, GLFW_TRUE);
 						}
+						else if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+							cout << "Enter pressed!" << endl;
+						}
 						
 						CheckError(__LINE__);
 					}
