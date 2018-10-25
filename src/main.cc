@@ -29,7 +29,7 @@ using namespace std;
 
 
 
-constexpr unsigned	FB_SCALE = 			18.0;
+constexpr unsigned	FB_SCALE = 			10.0;
 constexpr unsigned  FB_WIDTH =      	64 * FB_SCALE;
 constexpr unsigned  FB_HEIGHT =     	32 * FB_SCALE;
 constexpr unsigned  MSAA_SAMPLES =      4;
@@ -366,7 +366,6 @@ unsigned CreatCube(GLint vPos, GLint vNorm, GLint vColor, GLuint* vbo) {
 	
 	unsigned numTriangles = 12;
 	
-	//GLuint vbo;
 	glGenBuffers(1, vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, *vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3 * numTriangles, verts, GL_STATIC_DRAW);
@@ -452,7 +451,6 @@ int main(int argc, const char* argv[]) {
 				glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, value_ptr(projection));
 				
 				
-				
 				ya_rand_init(0); // normally this is done internally by xscreensaver
 				rotator* rotator = make_rotator(SPIN_SPEED,
 												SPIN_SPEED,
@@ -466,21 +464,15 @@ int main(int argc, const char* argv[]) {
 				glEnable(GL_DEPTH_TEST);
 				glDepthFunc(GL_LESS);
 				glDepthMask(GL_TRUE);
-				
-				
-				
-				
+
 				
 				glfwSetKeyCallback(window, key_callback);
 
 				while (!glfwWindowShouldClose(window)) {
-					
-					
-					
+
 					float time = glfwGetTime();
 					static float lastFrameTime = time;
 					float deltaSeconds = time - lastFrameTime;
-					//previousSeconds = time;
 					
 					if (deltaSeconds > 1.0/TARGET_FPS) {
 						
@@ -498,34 +490,25 @@ int main(int argc, const char* argv[]) {
 						
 						lastFrameTime = time;
 						
-						//				float a = 500.0;
-						//				static float timeOffset = ((float)rand()/(float)(RAND_MAX)) * a;
-						//				float time = glfwGetTime() + timeOffset;
-						//				static float previousSeconds = time;
-						//				float deltaSeconds = time - previousSeconds;
-						//				previousSeconds = time;
-						
 						glViewport(0, 0, FB_WIDTH, FB_HEIGHT);
 						glClearColor(0.0, 0.0, 0.0, 1.0);
 						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 						
 						if (g_mode == MODE::EMISSIVE_CUBE) {
-							{
-								double x, y, z;
-								
-								get_position(rotator, &x, &y, &z, 1);
-								x -= 0.5; y -= 0.5; z -= 0.5;
-								mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
-								
-								get_rotation(rotator, &x, &y, &z, 1);
-								mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
-								mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
-								mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
-								
-								model = translate * rotateZ * rotateY * rotateX;
-								
-								glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
-							}
+							double x, y, z;
+							
+							get_position(rotator, &x, &y, &z, 1);
+							x -= 0.5; y -= 0.5; z -= 0.5;
+							mat4 translate = glm::translate(mat4(1.0), { x * WANDER_X, y * WANDER_Y, z * WANDER_Z});
+							
+							get_rotation(rotator, &x, &y, &z, 1);
+							mat4 rotateX = rotate(mat4(1.0), radians((float)x * 360.0f), { 1, 0, 0 });
+							mat4 rotateY = rotate(mat4(1.0), radians((float)y * 360.0f), { 0, 1, 0 });
+							mat4 rotateZ = rotate(mat4(1.0), radians((float)z * 360.0f), { 0, 0, 1 });
+							
+							model = translate * rotateZ * rotateY * rotateX;
+							
+							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, value_ptr(model));
 							
 							glDrawArrays(GL_TRIANGLES, 0, numVerts);
 						}
@@ -537,6 +520,8 @@ int main(int argc, const char* argv[]) {
 						}
 						
 						glfwSwapBuffers(window);
+						
+						unsigned char* snapshot = CreateSnapshot(); // testing performance impact
 						
 						++frameCounter;
 						
