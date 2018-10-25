@@ -33,9 +33,10 @@ constexpr unsigned	FB_SCALE = 			18.0;
 constexpr unsigned  FB_WIDTH =      	64 * FB_SCALE;
 constexpr unsigned  FB_HEIGHT =     	32 * FB_SCALE;
 constexpr unsigned  MSAA_SAMPLES =      4;
-constexpr float		TARGET_FPS =		60.0;
-constexpr float     FOV =               30.0;
-constexpr float		CAM_DISTANCE =		4.0;
+constexpr float		TARGET_FPS =		60.0; // FPS
+constexpr float     FOV =               30.0; // degrees
+constexpr float		CAM_DISTANCE =		4.0; // units
+constexpr float		FPS_SAMPLE_RATE = 	0.5; // seconds
 
 // configure the random movement of the object
 
@@ -76,7 +77,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		
 		if (key != lastKeyDown) {
 			
-			if (key == GLFW_KEY_ENTER || key == GLFW_KEY_UNKNOWN) {
+			if (key == GLFW_KEY_ENTER) {
 				
 				underlying_type<MODE>::type modeRaw = static_cast<underlying_type<MODE>::type>(g_mode);
 				modeRaw += 1;
@@ -483,6 +484,18 @@ int main(int argc, const char* argv[]) {
 					
 					if (deltaSeconds > 1.0/TARGET_FPS) {
 						
+						static unsigned frameCounter = 0;
+						static float lastFPSSampleTime = time;
+						
+						float lastFPSSampleDelta = (time - lastFPSSampleTime);
+						if (lastFPSSampleDelta > FPS_SAMPLE_RATE) {
+							float fps = ((float)frameCounter) / lastFPSSampleDelta;
+							glfwSetWindowTitle(window, string(to_string(fps) + " fps").c_str());
+							
+							lastFPSSampleTime = time;
+							frameCounter = 0;
+						}
+						
 						lastFrameTime = time;
 						
 						//				float a = 500.0;
@@ -517,18 +530,15 @@ int main(int argc, const char* argv[]) {
 							glDrawArrays(GL_TRIANGLES, 0, numVerts);
 						}
 						
-						glfwSwapBuffers(window);
-						
-						//unsigned char* snapshot = CreateSnapshot();
-						
 						glfwPollEvents();
 						
 						if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 							glfwSetWindowShouldClose(window, GLFW_TRUE);
 						}
 						
-						//cout << "Waiting for key events..." << endl;
-						//glfwWaitEvents();
+						glfwSwapBuffers(window);
+						
+						++frameCounter;
 						
 						CheckError(__LINE__);
 					}
